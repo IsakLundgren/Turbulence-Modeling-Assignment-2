@@ -20,8 +20,8 @@ nim1=ni-1
 njm1=nj-1
 
 # read data file, load either paper or journal
-# vectz=np.genfromtxt("datnpy/vectz_aiaa_paper.dat",comments="%")
-vectz=np.genfromtxt("datnpy/vectz_aiaa_journal.dat",comments="%")
+vectz=np.genfromtxt("datnpy/vectz_aiaa_paper.dat",comments="%")
+# vectz=np.genfromtxt("datnpy/vectz_aiaa_journal.dat",comments="%")
 ntstep=vectz[0]
 n=len(vectz)
 
@@ -212,6 +212,32 @@ for i in range(len(stations)):
     ax[i].set_title("$x$ = " + str(stations[i]))
 fig.savefig('img/viscousratio.eps')
 
+#Plot modeled stress gradients to resolved ones (ONLY IN X-Direction) 
+# TODO take a look here again, resolved looks very small in comparison
+
+# compute the model gradient
+dudxnutdx,dudxnutdy=dphidx_dy(x_2d_new,y_2d_new,np.multiply(dudx,vis_2d-viscos))
+dudynutdx,dudynutdy=dphidx_dy(x_2d_new,y_2d_new,np.multiply(dudx,vis_2d-viscos))
+
+modelstressgrad = dudxnutdx + dudynutdy
+
+#compute the resolved gradient
+duudx, duudy = dphidx_dy(x_2d_new,y_2d_new,uu_2d)
+duvdx, duvdy = dphidx_dy(x_2d_new,y_2d_new,uv_2d)
+
+resolvedstressgrad = - duudx - duvdy
+
+stations = [0.65, 1]
+fig,ax = plt.subplots(1,len(stations), sharey=True)
+fig.suptitle("Modeled and resolved stress gradients for 2 $x$ stations")
+fig.supylabel("$y$")
+for i in range(len(stations)):
+    iinner = (np.abs(stations[i]-x_2d[:,1])).argmin()  # find index which closest fits xx
+    ax[i].plot(modelstressgrad[iinner,:],y_2d[iinner,:],'b-',label="Resolved")
+    ax[i].plot(resolvedstressgrad[iinner,:],y_2d[iinner,:],'r-',label="Modeled")
+    ax[i].set_title("$x$ = " + str(stations[i]))
+    ax[i].legend()
+fig.savefig('img/stressgradientcomparison.eps')
 
 
 plt.show(block=True)
