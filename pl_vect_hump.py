@@ -165,5 +165,22 @@ plt.axis([0.6,1.5,0,1])
 plt.title("vector plot")
 plt.savefig('vect_python.eps')
 
+##################################User defined code
+
+path = "datnpy/"
+stations = [0.66, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
+filename = ["x066_off.dat", "x080_off.dat", "x090_off.dat", "x100_off.dat", "x110_off.dat", "x120_off.dat", "x130_off.dat"]
+
+fig,ax = plt.subplots(1,len(stations), sharey=True)
+fig.suptitle("$\overline{v'v'}$ for different $x$ stations")
+fig.supylabel("$y$")
+for i in range(len(stations)):
+    iinner = (np.abs(stations[i]-x_2d[:,1])).argmin()  # find index which closest fits xx
+    ax[i].plot(vv_2d[iinner,:],y_2d[iinner,:],'b-')
+
+    x_off = np.genfromtxt(path + filename[i],comments="%")
+    ax[i].plot(x_off[:,5],x_off[:,1],'bo')
+    ax[i].set_title("$x$ = " + str(stations[i]))
 
 plt.show(block=True)
+
