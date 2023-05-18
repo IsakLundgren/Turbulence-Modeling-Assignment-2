@@ -85,4 +85,80 @@ ax.set_xlabel("$x$")
 plt.colorbar()
 plt.savefig("img/psi.eps")
 
+#Calculate wall distance
+calcWallDist = False
+
+if calcWallDist:
+    dw = np.zeros((ni,nj))
+    for i in range(ni):
+        for j in range(nj):
+            Distances = np.zeros((ni,2))
+            for k in range(ni):
+                Distances[k,0] = np.sqrt((xp2d[i,j]-xp2d[k,1])**2 + (yp2d[i,j]-yp2d[k,1])**2)
+                Distances[k,1] = np.sqrt((xp2d[i,j]-xp2d[k,nj-1])**2 + (yp2d[i,j]-yp2d[k,nj-1])**2)
+            dw[i,j] = np.min(Distances)
+            np.disp("Cell " + str(i * nj + j) + " out of " + str(ni * nj - 1) + " done!")
+    
+    # Write Walldistance vector to file
+    np.savetxt("datnpy/Walldistance.dat", dw)
+else:
+    if os.path.isfile("datnpy/Walldistance.dat"):
+        # Read Walldistance vector from file
+        dw = np.loadtxt("datnpy/Walldistance.dat")
+    else:
+        print("Error: Walldistance file not found.")
+
+#Calculate hmax
+calchmax = False
+if calchmax:
+    hmax = np.zeros((ni,nj))
+    for i in range(ni):
+        for j in range(nj):
+            sidesize = np.zeros(4)
+            sidesize[0] = (x2d[i,j+1]-x2d[i,j])**2 + (y2d[i,j+1]-y2d[i,j])**2
+            sidesize[1] = (x2d[i+1,j+1]-x2d[i,j+1])**2 + (y2d[i+1,j+1]-y2d[i,j+1])**2
+            sidesize[2] = (x2d[i+1,j]-x2d[i+1,j+1])**2 + (y2d[i+1,j]-y2d[i+1,j+1])**2
+            sidesize[3] = (x2d[i,j]-x2d[i+1,j])**2 + (y2d[i,j]-y2d[i+1,j])**2
+            hmax[i,j] = np.sqrt(np.max(sidesize))
+            np.disp("Cell " + str(i * nj + j) + " out of " + str(ni * nj - 1) + " done!")
+    
+    # Write Walldistance vector to file
+    np.savetxt("datnpy/hmax.dat", hmax)
+else:
+    if os.path.isfile("datnpy/hmax.dat"):
+        # Read Walldistance vector from file
+        hmax = np.loadtxt("datnpy/hmax.dat")
+    else:
+        print("Error: hmax file not found.")
+
+
+#Plot f_d tilde TODO Go back and review this, wrong somewhere
+kappa2 = 0.41**2
+vis_t2d = vis2d-viscos
+denominator = kappa2 * np.multiply(dw**2, np.maximum(s_abs2d,10**(-10)))
+r_dt = np.divide(vis_t2d,denominator)
+alpha = 0.25 - np.divide(dw,hmax)
+fdt = 1 - np.tanh((8 * r_dt)**3)
+fB = np.minimum(2 * np.exp(-9*alpha),1)
+fdtild = np.maximum(1-fdt,fB)
+stations = [0.66, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
+
+fig,ax = plt.subplots(1,len(stations), sharey=True)
+fig.suptitle("$\\tilde{f_d}$ for different $x$ stations")
+fig.supylabel("$y$")
+for i in range(len(stations)):
+    iinner = (np.abs(stations[i]-xp2d[:,1])).argmin()  # find index which closest fits xx
+    ax[i].plot(fdtild[iinner,:],yp2d[iinner,:],'b-')
+    ax[i].set_title("$x$ = " + str(stations[i]))
+fig.savefig('img/dftilde.eps')
+
+#Plot f_dt
+fig, ax = plt.subplots()
+plt.contourf(xp2d,yp2d,fdt)
+ax.set_title("$f_{dt}$ in the domain")
+ax.set_ylabel("$y$")
+ax.set_xlabel("$x$")
+plt.colorbar()
+plt.savefig("img/fdt.eps")
+
 plt.show(block=True)
