@@ -193,12 +193,26 @@ fig.suptitle("$\overline{u'v'}$ for 2 $x$ stations")
 fig.supylabel("$y$")
 for i in range(len(stations)):
     iinner = (np.abs(stations[i]-x_2d[:,1])).argmin()  # find index which closest fits xx
-    # iturb = np.where() #Find indicies where the flow is turbulent MIGHT NOT BE NECESSARY
+    # iturb = np.where((vis_2d[iinner,:]-viscos)/viscos >= 1) #Find indicies where the flow is turbulent MIGHT NOT BE NECESSARY
     ax[i].plot(uv_2d[iinner,:],y_2d[iinner,:],'b-',label="Resolved")
     ax[i].plot(uv_model_2d[iinner,:],y_2d[iinner,:],'r-',label="Modeled")
     ax[i].set_title("$x$ = " + str(stations[i]))
     ax[i].legend()
 fig.savefig('img/uvandmodel.eps')
+
+#Plot viscocity ratio
+vis_rat_2d = (vis_2d-viscos)/viscos
+stations = [0.65, 1]
+fig,ax = plt.subplots(1,len(stations), sharey=True)
+fig.suptitle("$\\nu _t/\\nu$ for 2 $x$ stations")
+fig.supylabel("$y$")
+for i in range(len(stations)):
+    iinner = (np.abs(stations[i]-x_2d[:,1])).argmin()  # find index which closest fits xx
+    ax[i].plot(vis_rat_2d[iinner,:],y_2d[iinner,:],'b-')
+    ax[i].set_title("$x$ = " + str(stations[i]))
+fig.savefig('img/viscousratio.eps')
+
+
 
 plt.show(block=True)
 
