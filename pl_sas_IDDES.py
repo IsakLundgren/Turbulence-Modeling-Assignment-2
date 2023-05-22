@@ -1,3 +1,4 @@
+import os.path
 import scipy.io as sio
 import numpy as np
 import sys
@@ -43,7 +44,7 @@ w3d_nfiles=np.zeros((ni,nj,nk,nfiles+1))
 for n in range(0,(nfiles)):
    nn=n*100
    print('time step no: ',nn)
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  read v_1 & transform v_1 to a 3D array (file 1)
+#  read v_1 & transform v_1 to a 3D array (file 1)
    u3d = np.load('datnpy/u3d_saved_'+str(nn)+'.npy')
    u3d_nfiles[:,:,:,n]= u3d
 
@@ -73,6 +74,10 @@ cyclic_x=False
 cyclic_z=True
 
 fx,fy,areawx,areawy,areasx,areasy,vol= compute_geometry(x2d,y2d,xp2d,yp2d,nk,dz)
+
+# compute cell centers
+xp2d=0.25*(x2d[0:-1,0:-1]+x2d[0:-1,1:]+x2d[1:,0:-1]+x2d[1:,1:])
+yp2d=0.25*(y2d[0:-1,0:-1]+y2d[0:-1,1:]+y2d[1:,0:-1]+y2d[1:,1:])
 
 # compute 1st-order gradients
 u_face_w,u_face_s,u_face_l=compute_face(u3d,'n','n','d','d','n',x2d,y2d,fx,fy,cyclic_x,cyclic_z,ni,nj,nk)
@@ -138,11 +143,58 @@ Upp = np.sqrt(np.multiply(d2udx2 + d2udy2 + d2udz2,d2udx2 + d2udy2 + d2udz2) \
    + np.multiply(d2vdx2 + d2vdy2 + d2vdz2,d2vdx2 + d2vdy2 + d2vdz2) \
       + np.multiply(d2wdx2 + d2wdy2 + d2wdz2,d2wdx2 + d2wdy2 + d2wdz2))
 kappa = 0.41
-S11 = 4 * dudx
-S12 = 2 * (dudy + dvdx)
-S13 = 2 * (dudz + dwdx)
-S22 = 4 * dvdy
-S23 = 2 * (dvdz + dwdy)
-S33 = 4 * dwdz
+S11 = dudx
+S12 = 1/2 * (dudy + dvdx)
+S13 = 1/2 * (dudz + dwdx)
+S22 = dvdy
+S23 = 1/2 * (dvdz + dwdy)
+S33 = dwdz
 
 s = np.sqrt(S11**2 + 2 * S12**2 + 2 * S13**2 + S22**2 + 2 * S23**2 + S33**2)
+
+L_vk_inst = kappa * np.divide(s,Upp)
+#Spanwise average
+L_vk_inst_av = 1/len(L_vk_inst[1,1,:]) * L_vk_inst.sum(axis=2)
+
+stations = [0.66, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
+fig,ax = plt.subplots(1,len(stations), sharey=True)
+fig.suptitle("Von Karman length scale $L_{vk,inst}$, spanwise averaged")
+fig.supylabel("$y$")
+for i in range(len(stations)):
+    iinner = (np.abs(stations[i]-xp2d[:,1])).argmin()  # find index which closest fits xx
+    ax[i].plot(L_vk_inst_av[iinner,:],yp2d[iinner,:],'b-')
+    #ax[i].plot(fdt[iinner,:],yp2d[iinner,:],'r-')
+    ax[i].set_title("$x$ = " + str(stations[i]))
+plt.savefig("img/vkinst.eps")
+
+C_des = 0.61
+calcDelta = False
+if calcDelta:
+    Delta = np.zeros((ni,nj))
+    for i in range(ni):
+        for j in range(nj):
+            sidesize = np.zeros(3) #I'm lazy, I just assume that cells are kind of isotropixc
+            sidesize[0] = (x2d[i+1,j]-x2d[i,j])**2 + (y2d[i+1,j]-y2d[i,j])**2
+            sidesize[1] = (x2d[i,j+1]-x2d[i,j])**2 + (y2d[i,j+1]-y2d[i,j])**2
+            sidesize[2] = dz
+            Delta[i,j] = np.sqrt(np.max(sidesize))
+            np.disp("Cell " + str(i * nj + j) + " out of " + str(ni * nj - 1) + " done!")
+    
+    # Write Walldistance vector to file
+    np.savetxt("datnpy/Delta.dat", Delta)
+else:
+    if os.path.isfile("datnpy/Delta.dat"):
+        # Read Walldistance vector from file
+        Delta = np.loadtxt("datnpy/Delta.dat")
+    else:
+        print("Error: Delta file not found.")
+
+fig, ax = plt.subplots()
+plt.contourf(xp2d,yp2d,C_des * Delta[:,:]) #Plot z station z = 0
+plt.xlabel("$x$")
+plt.ylabel("$y$")
+plt.title("Von Karman length scale $L_{vk,inst}$, $z = 0$")
+plt.colorbar()
+plt.savefig("img/vkinst.eps")
+
+plt.show(block=True)

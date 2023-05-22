@@ -92,10 +92,10 @@ if calcWallDist:
     dw = np.zeros((ni,nj))
     for i in range(ni):
         for j in range(nj):
-            Distances = np.zeros((ni,2))
+            Distances = np.zeros((ni,1))
             for k in range(ni):
-                Distances[k,0] = np.sqrt((xp2d[i,j]-xp2d[k,1])**2 + (yp2d[i,j]-yp2d[k,1])**2)
-                Distances[k,1] = np.sqrt((xp2d[i,j]-xp2d[k,nj-1])**2 + (yp2d[i,j]-yp2d[k,nj-1])**2)
+                Distances[k,0] = np.sqrt((xp2d[i,j]-xp2d[k,0])**2 + (yp2d[i,j]-yp2d[k,0])**2)
+                #Distances[k,1] = np.sqrt((xp2d[i,j]-xp2d[k,nj-1])**2 + (yp2d[i,j]-yp2d[k,nj-1])**2)
             dw[i,j] = np.min(Distances)
             np.disp("Cell " + str(i * nj + j) + " out of " + str(ni * nj - 1) + " done!")
     
@@ -114,11 +114,12 @@ if calchmax:
     hmax = np.zeros((ni,nj))
     for i in range(ni):
         for j in range(nj):
-            sidesize = np.zeros(4)
+            sidesize = np.zeros(5)
             sidesize[0] = (x2d[i,j+1]-x2d[i,j])**2 + (y2d[i,j+1]-y2d[i,j])**2
             sidesize[1] = (x2d[i+1,j+1]-x2d[i,j+1])**2 + (y2d[i+1,j+1]-y2d[i,j+1])**2
             sidesize[2] = (x2d[i+1,j]-x2d[i+1,j+1])**2 + (y2d[i+1,j]-y2d[i+1,j+1])**2
             sidesize[3] = (x2d[i,j]-x2d[i+1,j])**2 + (y2d[i,j]-y2d[i+1,j])**2
+            sidesize[4] = dz
             hmax[i,j] = np.sqrt(np.max(sidesize))
             np.disp("Cell " + str(i * nj + j) + " out of " + str(ni * nj - 1) + " done!")
     
@@ -132,7 +133,7 @@ else:
         print("Error: hmax file not found.")
 
 
-#Plot f_d tilde TODO Go back and review this, wrong somewhere
+#Plot f_d tilde and f_dt
 kappa2 = 0.41**2
 vis_t2d = vis2d-viscos
 denominator = kappa2 * np.multiply(dw**2, np.maximum(s_abs2d,10**(-10)))
@@ -141,15 +142,18 @@ alpha = 0.25 - np.divide(dw,hmax)
 fdt = 1 - np.tanh((8 * r_dt)**3)
 fB = np.minimum(2 * np.exp(-9*alpha),1)
 fdtild = np.maximum(1-fdt,fB)
-stations = [0.66, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
+stations = [0.65, 0.66, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
 
 fig,ax = plt.subplots(1,len(stations), sharey=True)
 fig.suptitle("$\\tilde{f_d}$ for different $x$ stations")
 fig.supylabel("$y$")
 for i in range(len(stations)):
     iinner = (np.abs(stations[i]-xp2d[:,1])).argmin()  # find index which closest fits xx
+    iturb = np.where((vis2d[iinner,:]-viscos)/viscos >= 1) #Find indicies where the flow is turbulent
     ax[i].plot(fdtild[iinner,:],yp2d[iinner,:],'b-')
+    #ax[i].plot(fdt[iinner,:],yp2d[iinner,:],'r-')
     ax[i].set_title("$x$ = " + str(stations[i]))
+    ax[i].set_ylim([0,np.max(yp2d[iinner,iturb])])
 fig.savefig('img/dftilde.eps')
 
 #Plot f_dt
