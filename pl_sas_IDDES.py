@@ -176,7 +176,7 @@ if calcDelta:
             sidesize = np.zeros(3) #I'm lazy, I just assume that cells are kind of isotropixc
             sidesize[0] = (x2d[i+1,j]-x2d[i,j])**2 + (y2d[i+1,j]-y2d[i,j])**2
             sidesize[1] = (x2d[i,j+1]-x2d[i,j])**2 + (y2d[i,j+1]-y2d[i,j])**2
-            sidesize[2] = dz
+            sidesize[2] = dz**2
             Delta[i,j] = np.sqrt(np.max(sidesize))
             np.disp("Cell " + str(i * nj + j) + " out of " + str(ni * nj - 1) + " done!")
     
@@ -193,8 +193,8 @@ fig, ax = plt.subplots()
 plt.contourf(xp2d,yp2d,C_des * Delta[:,:]) #Plot z station z = 0
 plt.xlabel("$x$")
 plt.ylabel("$y$")
-plt.title("Von Karman length scale $L_{vk,inst}$, $z = 0$")
+plt.title("Cell size length scale $C_{DES} \Delta$, $z = 0$")
 plt.colorbar()
-plt.savefig("img/vkinst.eps")
+plt.savefig("img/Cdelt.eps")
 
 plt.show(block=True)
