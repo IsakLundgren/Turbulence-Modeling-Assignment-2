@@ -185,7 +185,52 @@ else:
         print("Error: Delta file not found.")
 
 #Calculate time averaged quantities for steady von Karman
+itstep,nk,dz=np.load('datnpy/itstep-hump-IDDES.npy')
+u2d=np.load('datnpy/u_averaged-hump-IDDES.npy')/itstep            #streamwise mean velocity
+v2d=np.load('datnpy/v_averaged-hump-IDDES.npy')/itstep            #streamwise mean velocity
 
+cyclic_x=False
+cyclic_z=True
+
+fx2d,fy2d,areawx_2d,areawy_2d,areasx_2d,areasy_2d,vol_2d= compute_geometry_2d(x2d,y2d,xp2d,yp2d)
+
+dudxS= np.zeros((ni,nj))
+dudyS= np.zeros((ni,nj))
+dvdxS= np.zeros((ni,nj))
+dvdyS= np.zeros((ni,nj))
+
+u_face_w,u_face_s=compute_face_2d(u2d,'n','n','d','d',x2d,y2d,fx2d,fy2d,cyclic_x,ni,nj)
+v_face_w,v_face_s=compute_face_2d(v2d,'n','n','d','d',x2d,y2d,fx2d,fy2d,cyclic_x,ni,nj)
+
+dudxS=dphidx_2d(u_face_w,u_face_s,areawx_2d,areawy_2d,areasx_2d,areasy_2d,vol_2d)
+dudyS=dphidy_2d(u_face_w,u_face_s,areawx_2d,areawy_2d,areasx_2d,areasy_2d,vol_2d)
+dvdxS=dphidx_2d(v_face_w,v_face_s,areawx_2d,areawy_2d,areasx_2d,areasy_2d,vol_2d)
+dvdyS=dphidy_2d(v_face_w,v_face_s,areawx_2d,areawy_2d,areasx_2d,areasy_2d,vol_2d)
+
+# compute 2nd-order gradients of U
+u_face_w,u_face_s=compute_face_2d(dudxS,'n','n','d','d',x2d,y2d,fx2d,fy2d,cyclic_x,ni,nj)
+d2udx2S=dphidx_2d(u_face_w,u_face_s,areawx_2d,areawy_2d,areasx_2d,areasy_2d,vol_2d)
+
+u_face_w,u_face_s=compute_face_2d(dudyS,'n','n','d','d',x2d,y2d,fx2d,fy2d,cyclic_x,ni,nj)
+d2udy2S=dphidy_2d(u_face_w,u_face_s,areawx_2d,areawy_2d,areasx_2d,areasy_2d,vol_2d)
+
+# compute 2nd-order gradients of V
+v_face_w,v_face_s=compute_face_2d(dvdxS,'n','n','d','d',x2d,y2d,fx2d,fy2d,cyclic_x,ni,nj)
+d2vdx2S=dphidx_2d(v_face_w,v_face_s,areawx_2d,areawy_2d,areasx_2d,areasy_2d,vol_2d)
+
+v_face_w,v_face_s=compute_face_2d(dvdyS,'n','n','d','d',x2d,y2d,fx2d,fy2d,cyclic_x,ni,nj)
+d2vdy2S=dphidy_2d(v_face_w,v_face_s,areawx_2d,areawy_2d,areasx_2d,areasy_2d,vol_2d)
+
+UppS = np.sqrt(np.multiply(d2udx2S + d2udy2S,d2udx2S + d2udy2S) \
+   + np.multiply(d2vdx2S + d2vdy2S,d2vdx2S + d2vdy2S))
+
+S11 = dudxS
+S12 = 1/2 * (dudyS + dvdxS)
+S22 = dvdyS
+
+sSteady = np.sqrt(2*(S11**2 + 2 * S12**2 + 2 * S22**2))
+
+L_vk_Steady = kappa * np.divide(sSteady,UppS)
 
 stations = [0.66, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
 fig,ax = plt.subplots(1,len(stations), sharey=True)
@@ -194,6 +239,7 @@ fig.supylabel("$y$")
 for i in range(len(stations)):
     iinner = (np.abs(stations[i]-xp2d[:,1])).argmin()  # find index which closest fits xx
     ax[i].plot(L_vk_inst_av[iinner,:],yp2d[iinner,:],'b-',label="L_{vk,inst}")
+    ax[i].plot(L_vk_Steady[iinner,:],yp2d[iinner,:],'g-',label="L_{vk,steady}")
     ax[i].plot(C_des * Delta[iinner,:],yp2d[iinner,:],'r-',label="C_{DES}\Delta")
     ax[i].set_title("$x$ = " + str(stations[i]))
     ax[i].legend()
