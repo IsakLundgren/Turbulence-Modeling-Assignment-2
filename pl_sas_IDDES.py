@@ -35,7 +35,7 @@ dz=zmax/nk
 
 # loop over nfiles 
 #nfiles=23
-nfiles=2
+nfiles=23
 #initialize fields
 u3d_nfiles=np.zeros((ni,nj,nk,nfiles+1))
 v3d_nfiles=np.zeros((ni,nj,nk,nfiles+1))
@@ -44,9 +44,15 @@ w3d_nfiles=np.zeros((ni,nj,nk,nfiles+1))
 for n in range(0,(nfiles)):
    nn=n*100
    print('time step no: ',nn)
-#  read v_1 & transform v_1 to a 3D array (file 1)
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  read v_1 & transform v_1 to a 3D array (file 1)
    u3d = np.load('datnpy/u3d_saved_'+str(nn)+'.npy')
    u3d_nfiles[:,:,:,n]= u3d
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  read v_2 & transform v_2 to a 3D array (file 1)
+   v3d = np.load('datnpy/v3d_saved_'+str(nn)+'.npy')
+   v3d_nfiles[:,:,:,n]= v3d
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  read v_3 & transform v_3 to a 3D array (file 1)
+   w3d = np.load('datnpy/w3d_saved_'+str(nn)+'.npy')
+   w3d_nfiles[:,:,:,n]= w3d
 
 # merge nfiles. This means that new nk = nfiles*nk
 u3d=u3d_nfiles[:,:,:,1]
@@ -156,17 +162,6 @@ L_vk_inst = kappa * np.divide(s,Upp)
 #Spanwise average
 L_vk_inst_av = 1/len(L_vk_inst[1,1,:]) * L_vk_inst.sum(axis=2)
 
-stations = [0.66, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
-fig,ax = plt.subplots(1,len(stations), sharey=True)
-fig.suptitle("Von Karman length scale $L_{vk,inst}$, spanwise averaged")
-fig.supylabel("$y$")
-for i in range(len(stations)):
-    iinner = (np.abs(stations[i]-xp2d[:,1])).argmin()  # find index which closest fits xx
-    ax[i].plot(L_vk_inst_av[iinner,:],yp2d[iinner,:],'b-')
-    #ax[i].plot(fdt[iinner,:],yp2d[iinner,:],'r-')
-    ax[i].set_title("$x$ = " + str(stations[i]))
-plt.savefig("img/vkinst.eps")
-
 C_des = 0.61
 calcDelta = False
 if calcDelta:
@@ -189,12 +184,21 @@ else:
     else:
         print("Error: Delta file not found.")
 
-fig, ax = plt.subplots()
-plt.contourf(xp2d,yp2d,C_des * Delta[:,:]) #Plot z station z = 0
-plt.xlabel("$x$")
-plt.ylabel("$y$")
-plt.title("Cell size length scale $C_{DES} \Delta$, $z = 0$")
-plt.colorbar()
-plt.savefig("img/Cdelt.eps")
+#Calculate time averaged quantities for steady von Karman
+
+
+stations = [0.66, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
+fig,ax = plt.subplots(1,len(stations), sharey=True)
+fig.suptitle("Length scales")
+fig.supylabel("$y$")
+for i in range(len(stations)):
+    iinner = (np.abs(stations[i]-xp2d[:,1])).argmin()  # find index which closest fits xx
+    ax[i].plot(L_vk_inst_av[iinner,:],yp2d[iinner,:],'b-',label="L_{vk,inst}")
+    ax[i].plot(C_des * Delta[iinner,:],yp2d[iinner,:],'r-',label="C_{DES}\Delta")
+    ax[i].set_title("$x$ = " + str(stations[i]))
+    ax[i].legend()
+plt.savefig("img/LengthScales.eps")
+
+
 
 plt.show(block=True)
