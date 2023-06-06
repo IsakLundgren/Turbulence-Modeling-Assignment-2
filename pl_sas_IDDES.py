@@ -35,7 +35,7 @@ dz=zmax/nk
 
 # loop over nfiles 
 #nfiles=23
-nfiles=23
+nfiles=2
 #initialize fields
 u3d_nfiles=np.zeros((ni,nj,nk,nfiles+1))
 v3d_nfiles=np.zeros((ni,nj,nk,nfiles+1))
@@ -232,6 +232,29 @@ sSteady = np.sqrt(2*(S11**2 + 2 * S12**2 + 2 * S22**2))
 
 L_vk_Steady = kappa * np.divide(sSteady,UppS)
 
+#Calculate RANS length scale
+vectz=np.genfromtxt("datnpy/vectz_aiaa_paper.dat",comments="%")
+ntstep=vectz[0]
+n=len(vectz)
+nst=0
+nn=12
+ik=range(nst+9,n,nn)
+idiss=range(nst+11,n,nn)
+k_model=vectz[ik]/ntstep
+diss=vectz[idiss]/ntstep
+niRANS=314
+njRANS=122
+k_model_2d=np.reshape(k_model,(niRANS,njRANS))
+diss_2d=np.reshape(diss,(niRANS,njRANS)) 
+
+L_RANS = np.divide(k_model_2d**(3/2),diss_2d)
+
+xy_hump_fine = np.loadtxt("datnpy/xy_hump.dat")
+xRANS=xy_hump_fine[:,0]
+yRANS=xy_hump_fine[:,1]
+x_2dRANS=np.transpose(np.reshape(xRANS,(njRANS,niRANS)))
+y_2dRANS=np.transpose(np.reshape(yRANS,(njRANS,niRANS)))
+
 stations = [0.66, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
 fig,ax = plt.subplots(1,len(stations), sharey=True)
 fig.suptitle("Length scales")
@@ -241,9 +264,16 @@ for i in range(len(stations)):
     ax[i].plot(L_vk_inst_av[iinner,:],yp2d[iinner,:],'b-',label="L_{vk,inst}")
     ax[i].plot(L_vk_Steady[iinner,:],yp2d[iinner,:],'g-',label="L_{vk,steady}")
     ax[i].plot(C_des * Delta[iinner,:],yp2d[iinner,:],'r-',label="C_{DES}\Delta")
+
+    iinnerRANS = (np.abs(stations[i]-x_2dRANS[:,1])).argmin()
+    ax[i].plot(L_RANS[iinnerRANS,:],y_2dRANS[iinnerRANS,:],'m-',label="L_{RANS}")
+
     ax[i].set_title("$x$ = " + str(stations[i]))
     ax[i].legend()
 plt.savefig("img/LengthScales.eps")
+
+#Plot source terms
+
 
 
 
