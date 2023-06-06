@@ -165,4 +165,26 @@ ax.set_xlabel("$x$")
 plt.colorbar()
 plt.savefig("img/fdt.eps")
 
+#Evaluate resolution
+res1 = (vis2d-viscos)/viscos
+
+modeledshearstress = -np.multiply(dudy + dvdx,vis2d-viscos)
+res2 = np.abs(np.divide(modeledshearstress,modeledshearstress + uv2d))
+
+k_res_2d = 1/2 * (uu2d + vv2d + ww2d)
+res3 = np.divide(k_model2d, (k_model2d + k_res_2d))
+
+blt = np.zeros(ni)
+dx = np.zeros(ni)
+for i in range(ni-1):
+    dx[i] = abs(x2d[i+1,0] - x2d[i,0])
+    for j in range(nj-1):
+        if res1[i,j] < 1:
+            blt[i] = xp2d[i,j]
+            break      
+
+res6 = np.zeros((ni,2))
+res6[:,0] = np.divide(blt,dx)
+res6[:,1] = np.divide(blt,dz)
+
 plt.show(block=True)

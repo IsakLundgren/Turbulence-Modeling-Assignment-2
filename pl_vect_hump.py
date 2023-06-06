@@ -100,6 +100,7 @@ y_2d_new=np.delete(y_2d,-1,0)
 y_2d_new=np.delete(y_2d_new,-1,1)
 # compute the gradient
 dudx,dudy=dphidx_dy(x_2d_new,y_2d_new,u_2d)
+dvdx,dvdy=dphidx_dy(x_2d_new,y_2d_new,v_2d)
 
 
 #*************************
@@ -239,6 +240,33 @@ for i in range(len(stations)):
     ax[i].legend()
 fig.savefig('img/stressgradientcomparison.eps')
 
+#Evaluate resolution
+res1 = (vis_2d-viscos)/viscos
+
+modeledshearstress = -np.multiply(dudy + dvdx,vis_2d-viscos)
+res2 = np.abs(np.divide(modeledshearstress,modeledshearstress + uv_2d))
+
+k_res_2d = 1/2 * (uu_2d + vv_2d + ww_2d)
+res3 = np.divide(k_model_2d, (k_model_2d + k_res_2d))
+
+blt = np.zeros(ni)
+dx = np.zeros(ni)
+for i in range(ni-1):
+    dx[i] = abs(x_2d[i,0] - x_2d[i-1,0])
+    for j in range(nj-1):
+        if res1[i,j] < 1:
+            blt[i] = x_2d[i,j]
+            break
+
+dx[0] = dx[1]        
+
+zmax, nk=np.loadtxt('datnpy/z_hump_IDDES.dat')
+nk=int(nk)
+dz=zmax/nk
+
+res6 = np.zeros((ni,2))
+res6[:,0] = np.divide(blt,dx)
+res6[:,1] = np.divide(blt,dz)
 
 plt.show(block=True)
 

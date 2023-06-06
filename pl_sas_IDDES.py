@@ -234,29 +234,10 @@ sSteady = np.sqrt(2*(S11**2 + 2 * S12**2 + 2 * S22**2))
 L_vk_Steady = kappa * np.divide(sSteady,UppS)
 
 #Calculate RANS length scale
-vectz=np.genfromtxt("datnpy/vectz_aiaa_paper.dat",comments="%")
-ntstep=vectz[0]
-n=len(vectz)
-nst=0
-nn=12
-ik=range(nst+9,n,nn)
-idiss=range(nst+11,n,nn)
-k_model=vectz[ik]/ntstep
-diss=vectz[idiss]/ntstep
-niRANS=314
-njRANS=122
-k_model_2d=np.reshape(k_model,(niRANS,njRANS))
-diss_2d=np.reshape(diss,(niRANS,njRANS)) 
-
-L_RANS_wrong_coordinates = np.divide(k_model_2d**(3/2),diss_2d)
-
-xy_hump_fine = np.loadtxt("datnpy/xy_hump.dat")
-xRANS=xy_hump_fine[:,0]
-yRANS=xy_hump_fine[:,1]
-x_2dRANS=np.transpose(np.reshape(xRANS,(njRANS,niRANS)))
-y_2dRANS=np.transpose(np.reshape(yRANS,(njRANS,niRANS)))
-
-interp = RegularGridInterpolator((x_2dRANS,y_2dRANS), L_RANS_wrong_coordinates)
+itstep,nk_temp,dz_temp=np.load('datnpy/itstep-hump-IDDES.npy')
+k_model2d=np.load('datnpy/k_averaged-hump-IDDES.npy')/itstep
+eps2d=np.load('datnpy/eps_averaged-hump-IDDES.npy')/itstep
+L_RANS = np.divide(k_model2d**(3/2),eps2d)
 
 stations = [0.66, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
 fig,ax = plt.subplots(1,len(stations), sharey=True)
@@ -265,11 +246,9 @@ fig.supylabel("$y$")
 for i in range(len(stations)):
     iinner = (np.abs(stations[i]-xp2d[:,1])).argmin()  # find index which closest fits xx
     ax[i].plot(L_vk_inst_av[iinner,:],yp2d[iinner,:],'b-',label="L_{vk,inst}")
-    ax[i].plot(L_vk_Steady[iinner,:],yp2d[iinner,:],'g-',label="L_{vk,steady}")
-    ax[i].plot(C_des * Delta[iinner,:],yp2d[iinner,:],'r-',label="C_{DES}\Delta")
-
-    iinnerRANS = (np.abs(stations[i]-x_2dRANS[:,1])).argmin()
-    ax[i].plot(L_RANS_wrong_coordinates[iinnerRANS,:],y_2dRANS[iinnerRANS,:],'m-',label="L_{RANS}")
+    ax[i].plot(L_vk_Steady[iinner,:],yp2d[iinner,:],'r-',label="L_{vk,steady}")
+    ax[i].plot(C_des * Delta[iinner,:],yp2d[iinner,:],'g-',label="C_{DES}\Delta")
+    ax[i].plot(L_RANS[iinner,:],yp2d[iinner,:],'m-',label="L_{RANS}")
 
     ax[i].set_title("$x$ = " + str(stations[i]))
     ax[i].legend()
@@ -277,8 +256,22 @@ plt.savefig("img/LengthScales.eps")
 
 #Plot source terms
 zeta = 1.5
-#L_SAS_pre = np.divide()
-#P_SAS_inst = zeta * kappa * np.multiply(s**2,np.divide(L)
+s_av = 1/len(s[1,1,:]) * s.sum(axis=2)
+P_SAS_inst = zeta * kappa * np.multiply(s_av**2,np.divide(L_RANS,L_vk_inst_av))
+P_SAS_steady = zeta * kappa * np.multiply(s_av**2,np.divide(L_RANS,L_vk_Steady))
+
+stations = [0.66, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
+fig,ax = plt.subplots(1,len(stations), sharey=True)
+fig.suptitle("Production terms P_\omega")
+fig.supylabel("$y$")
+for i in range(len(stations)):
+    iinner = (np.abs(stations[i]-xp2d[:,1])).argmin()  # find index which closest fits xx
+    ax[i].plot(P_SAS_inst[iinner,:],yp2d[iinner,:],'b-',label="inst")
+    ax[i].plot(P_SAS_steady[iinner,:],yp2d[iinner,:],'r-',label="steady")
+
+    ax[i].set_title("$x$ = " + str(stations[i]))
+    ax[i].legend()
+plt.savefig("img/Productions.eps")
 
 
 
