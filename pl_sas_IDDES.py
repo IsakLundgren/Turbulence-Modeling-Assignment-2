@@ -5,6 +5,7 @@ import sys
 import matplotlib.pyplot as plt
 from grad_xyz import dphidx_2d,dphidy_2d,compute_face_2d,compute_geometry_2d, \
                      dphidx,dphidy,dphidz,compute_face,compute_geometry
+from scipy.interpolate import RegularGridInterpolator
 plt.rcParams.update({'font.size': 22})
 plt.interactive(True)
 re =9.36e+5
@@ -247,13 +248,15 @@ njRANS=122
 k_model_2d=np.reshape(k_model,(niRANS,njRANS))
 diss_2d=np.reshape(diss,(niRANS,njRANS)) 
 
-L_RANS = np.divide(k_model_2d**(3/2),diss_2d)
+L_RANS_wrong_coordinates = np.divide(k_model_2d**(3/2),diss_2d)
 
 xy_hump_fine = np.loadtxt("datnpy/xy_hump.dat")
 xRANS=xy_hump_fine[:,0]
 yRANS=xy_hump_fine[:,1]
 x_2dRANS=np.transpose(np.reshape(xRANS,(njRANS,niRANS)))
 y_2dRANS=np.transpose(np.reshape(yRANS,(njRANS,niRANS)))
+
+interp = RegularGridInterpolator((x_2dRANS,y_2dRANS), L_RANS_wrong_coordinates)
 
 stations = [0.66, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
 fig,ax = plt.subplots(1,len(stations), sharey=True)
@@ -266,14 +269,16 @@ for i in range(len(stations)):
     ax[i].plot(C_des * Delta[iinner,:],yp2d[iinner,:],'r-',label="C_{DES}\Delta")
 
     iinnerRANS = (np.abs(stations[i]-x_2dRANS[:,1])).argmin()
-    ax[i].plot(L_RANS[iinnerRANS,:],y_2dRANS[iinnerRANS,:],'m-',label="L_{RANS}")
+    ax[i].plot(L_RANS_wrong_coordinates[iinnerRANS,:],y_2dRANS[iinnerRANS,:],'m-',label="L_{RANS}")
 
     ax[i].set_title("$x$ = " + str(stations[i]))
     ax[i].legend()
 plt.savefig("img/LengthScales.eps")
 
 #Plot source terms
-
+zeta = 1.5
+#L_SAS_pre = np.divide()
+#P_SAS_inst = zeta * kappa * np.multiply(s**2,np.divide(L)
 
 
 
