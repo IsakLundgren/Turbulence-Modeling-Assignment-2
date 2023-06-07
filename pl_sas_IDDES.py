@@ -5,7 +5,7 @@ import sys
 import matplotlib.pyplot as plt
 from grad_xyz import dphidx_2d,dphidy_2d,compute_face_2d,compute_geometry_2d, \
                      dphidx,dphidy,dphidz,compute_face,compute_geometry
-from scipy.interpolate import RegularGridInterpolator
+from astropy.stats import circcorrcoef
 plt.rcParams.update({'font.size': 22})
 plt.interactive(True)
 re =9.36e+5
@@ -33,6 +33,7 @@ yp2d=0.25*(y2d[0:-1,0:-1]+y2d[0:-1,1:]+y2d[1:,0:-1]+y2d[1:,1:])
 zmax, nk=np.loadtxt('datnpy/z_hump_IDDES.dat')
 nk=int(nk)
 dz=zmax/nk
+zp2d = np.linspace(0,zmax, num=nk)
 
 # loop over nfiles 
 #nfiles=23
@@ -186,7 +187,7 @@ else:
         print("Error: Delta file not found.")
 
 #Calculate time averaged quantities for steady von Karman
-itstep,nk,dz=np.load('datnpy/itstep-hump-IDDES.npy')
+itstep,nk_temp,dz=np.load('datnpy/itstep-hump-IDDES.npy')
 u2d=np.load('datnpy/u_averaged-hump-IDDES.npy')/itstep            #streamwise mean velocity
 v2d=np.load('datnpy/v_averaged-hump-IDDES.npy')/itstep            #streamwise mean velocity
 
@@ -273,6 +274,22 @@ for i in range(len(stations)):
     ax[i].legend()
 plt.savefig("img/Productions.eps")
 
+xstations = [0.65, 0.8, 1.1, 1.3]
+jystations = [3, 10, 30, 70]
+zmax, nk=np.loadtxt('datnpy/z_hump_IDDES.dat')
+nk=int(nk)
+two_corrz=np.zeros((nk,nfiles,len(xstations),len(jystations)))
+for iouter in range(0,len(xstations)):
+    i = (np.abs(xstations[iouter]-xp2d[:,1])).argmin()
+    for jouter in range(0,len(jystations)):
+      j = jystations[jouter]
+      for n in range(0,nfiles):
+         for k in range(0,nk):
+            two_corrz[k,n,iouter,jouter]=two_corrz[k,n,iouter,jouter]+circcorrcoef(w3d[i,j,:],np.roll(w3d[i,j,:],k))/nk
 
+corr = two_corrz[:,1,2,2] / max(two_corrz[:,1,2,2])
+fig,ax = plt.subplots()
+plt.plot(zp2d, corr)
+plt.savefig("img/TwoPointCorrellation.eps")
 
 plt.show(block=True)
