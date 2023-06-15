@@ -243,11 +243,35 @@ fig.savefig('img/stressgradientcomparison.eps')
 #Evaluate resolution
 res1 = (vis_2d-viscos)/viscos
 
+stations = [0.65, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
+
+fig,ax = plt.subplots(1,len(stations), sharey=True)
+fig.suptitle("$\langle \\nu_t \\rangle / \\nu$ for different $x$ stations")
+fig.supylabel("$y$")
+for i in range(len(stations)):
+    iinner = (np.abs(stations[i]-x_2d[:,1])).argmin()  # find index which closest fits xx
+    ax[i].plot(res1[iinner,:],y_2d[iinner,:],'b-')
+fig.savefig('img/res1.eps')
+
 modeledshearstress = -np.multiply(dudy + dvdx,vis_2d-viscos)
 res2 = np.abs(np.divide(modeledshearstress,modeledshearstress + uv_2d))
+fig,ax = plt.subplots(1,len(stations), sharey=True)
+fig.suptitle("|$\langle \\tau_{12}\\rangle / (\langle \\tau_{12}\\rangle + \langle \\bar{v}_1'\\bar{v}_2'\\rangle)|$ for different $x$ stations")
+fig.supylabel("$y$")
+for i in range(len(stations)):
+    iinner = (np.abs(stations[i]-x_2d[:,1])).argmin()  # find index which closest fits xx
+    ax[i].plot(res2[iinner,:],y_2d[iinner,:],'b-')
+fig.savefig('img/res2.eps')
 
 k_res_2d = 1/2 * (uu_2d + vv_2d + ww_2d)
 res3 = np.divide(k_model_2d, (k_model_2d + k_res_2d))
+fig,ax = plt.subplots(1,len(stations), sharey=True)
+fig.suptitle("$\langle k_{model}\\rangle / (\langle k_{model}\\rangle + k_{res})$ for different $x$ stations")
+fig.supylabel("$y$")
+for i in range(len(stations)):
+    iinner = (np.abs(stations[i]-x_2d[:,1])).argmin()  # find index which closest fits xx
+    ax[i].plot(res3[iinner,:],y_2d[iinner,:],'b-')
+fig.savefig('img/res3.eps')
 
 blt = np.zeros(ni)
 dx = np.zeros(ni)
@@ -267,6 +291,14 @@ dz=zmax/nk
 res6 = np.zeros((ni,2))
 res6[:,0] = np.divide(blt,dx)
 res6[:,1] = np.divide(blt,dz)
+
+fig,ax = plt.subplots(2,1, sharex=True)
+fig.suptitle("Boundary layer thickness ratio")
+fig.supxlabel("x")
+ax[0].plot(x_2d[:,0],res6[:,0])
+ax[1].plot(x_2d[:,1],res6[:,1])
+ax[0].set_ylabel("$\delta/\Delta x$")
+ax[1].set_ylabel("$\delta/\Delta z$")
 
 plt.show(block=True)
 

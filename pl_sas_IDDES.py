@@ -37,7 +37,7 @@ zp2d = np.linspace(0,zmax, num=nk)
 
 # loop over nfiles 
 #nfiles=23
-nfiles=2
+nfiles=23
 #initialize fields
 u3d_nfiles=np.zeros((ni,nj,nk,nfiles+1))
 v3d_nfiles=np.zeros((ni,nj,nk,nfiles+1))
@@ -236,9 +236,13 @@ L_vk_Steady = kappa * np.divide(sSteady,UppS)
 
 #Calculate RANS length scale
 itstep,nk_temp,dz_temp=np.load('datnpy/itstep-hump-IDDES.npy')
+uu2d=np.load('datnpy/uu_stress-hump-IDDES.npy')/itstep
+vv2d=np.load('datnpy/vv_stress-hump-IDDES.npy')/itstep
+ww2d=np.load('datnpy/ww_stress-hump-IDDES.npy')/itstep
 k_model2d=np.load('datnpy/k_averaged-hump-IDDES.npy')/itstep
 eps2d=np.load('datnpy/eps_averaged-hump-IDDES.npy')/itstep
-L_RANS = np.divide(k_model2d**(3/2),eps2d)
+k_res2d = 1/2 * (uu2d + vv2d + ww2d)
+L_RANS = np.divide((k_model2d + k_res2d)**(3/2),eps2d)
 
 stations = [0.66, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
 fig,ax = plt.subplots(1,len(stations), sharey=True)
@@ -290,6 +294,8 @@ for iouter in range(0,len(xstations)):
 corr = two_corrz[:,1,2,2] / max(two_corrz[:,1,2,2])
 fig,ax = plt.subplots()
 plt.plot(zp2d, corr)
+plt.ylabel("B_{33}^{norm}")
+plt.xlabel("z")
 plt.savefig("img/TwoPointCorrellation.eps")
 
 plt.show(block=True)
